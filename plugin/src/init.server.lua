@@ -884,12 +884,7 @@ injectBtn.MouseButton1Click:Connect(function()
 	end
 	
 	-- Create a LocalScript in StarterPlayer to inject code
-	local injectionCode = [[
-local injectedCode = [[
-]] .. lastGeneratedCode .. [[
-]]
-load(injectedCode)()
-]]
+	local injectionCode = "load(" .. string.format("%q", "local code = " .. string.format("%q", lastGeneratedCode) .. "; load(code)()") .. ")()"
 	
 	-- Try multiple injection points
 	local starterPlayer = game:GetService("StarterPlayer")
