@@ -10,7 +10,6 @@
 			"$path": "src/init.lua"
 		},
 		"Main": {
-			"$className": "ModuleScript",
 			"$path": "src/Main.lua"
 		}
 	}
