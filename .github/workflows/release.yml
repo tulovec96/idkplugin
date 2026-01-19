@@ -12,37 +12,28 @@ on:
         description: "Version of plugin (e.g., 1.0.0)"
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create tag
-        run: |
-          git tag v${{ github.event.inputs.version }}
-          git push origin v${{ github.event.inputs.version }}
-      - name: Create release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create v${{ github.event.inputs.version }} --draft --title "Release v${{ github.event.inputs.version }}"
-
   build-plugin:
-    needs: ["create-release"]
     name: Build Plugin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup aftman
         uses: ok-nick/setup-aftman@v0.4.2
-      - name: Update version
-        run: |
-          echo "${{ github.event.inputs.version }}" > plugin/Version.txt
+
+      - name: Update version file
+        run: echo "${{ github.event.inputs.version }}" > plugin/Version.txt
+
       - name: Build plugin
-        run: |
-          rojo build plugin --output OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
-      - name: Upload to release
+        run: rojo build plugin --output OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          draft: false
+          files: OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload v${{ github.event.inputs.version }} OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
