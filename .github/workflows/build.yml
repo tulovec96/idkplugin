@@ -1,0 +1,35 @@
+name: Build Release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: "Version number (e.g., 1.0.0)"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+
+      - name: Update version
+        run: echo "${{ github.event.inputs.version }}" > plugin/Version.txt
+
+      - name: Build rbxm
+        run: rojo build plugin -o OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          files: OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
