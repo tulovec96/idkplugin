@@ -4,12 +4,18 @@ permissions:
   contents: write
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'plugin/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
       version:
         type: string
-        required: true
-        description: "Version number (e.g., 1.0.0)"
+        required: false
+        description: "Version number (optional, auto-detected if empty)"
 
 jobs:
   build:
@@ -20,16 +26,25 @@ jobs:
       - name: Setup aftman
         uses: ok-nick/setup-aftman@v0.4.2
 
-      - name: Update version
-        run: echo "${{ github.event.inputs.version }}" > plugin/Version.txt
+      - name: Get version
+        id: version
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            VERSION=$(cat plugin/Version.txt | tr -d '\r\n')
+          else
+            VERSION=${{ github.event.inputs.version }}
+            echo $VERSION > plugin/Version.txt
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build rbxm
-        run: rojo build plugin -o OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
+        run: rojo build plugin -o OllamaCodeGenerator-v${{ steps.version.outputs.version }}.rbxm
 
-      - name: Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          files: OllamaCodeGenerator-v${{ github.event.inputs.version }}.rbxm
+          tag_name: v${{ steps.version.outputs.version }}
+          files: OllamaCodeGenerator-v${{ steps.version.outputs.version }}.rbxm
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
