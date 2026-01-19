@@ -298,6 +298,38 @@ end
 -- PHASE 1: MEMORY SYSTEM
 -- ============================================================================
 
+-- ============================================================================
+-- CHECKPOINT SYSTEM (Version Management)
+-- ============================================================================
+
+local Checkpoint = {}
+Checkpoint.history = {}
+
+function Checkpoint.save(code, scriptType, description)
+	table.insert(Checkpoint.history, {
+		code = code,
+		scriptType = scriptType,
+		description = description or "Generated code",
+		timestamp = os.time(),
+		id = #Checkpoint.history + 1
+	})
+end
+
+function Checkpoint.restore(checkpointId)
+	for i, checkpoint in ipairs(Checkpoint.history) do
+		if checkpoint.id == checkpointId then
+			lastGeneratedCode = checkpoint.code
+			lastScriptType = checkpoint.scriptType
+			return checkpoint
+		end
+	end
+	return nil
+end
+
+function Checkpoint.getAll()
+	return Checkpoint.history
+end
+
 local Memory = {}
 Memory.history = {}
 
@@ -332,7 +364,7 @@ local widget = plugin:CreateDockWidgetPluginGui(
 	"Lemonade AI",
 	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1000, 700, 1000, 700)
 )
-widget.Title = "🍋 Lemonade AI - Phase 3"
+widget.Title = "🍋 Lemonade AI - Phase 3.1"
 
 local toggleButton = toolbar:CreateButton("Toggle", "Show/Hide", "rbxasset://textures/DragLockedCursor.png")
 toggleButton.Click:Connect(function()
@@ -350,14 +382,62 @@ main.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
 main.BorderSizePixel = 0
 main.Parent = widget
 
--- Chat area
+-- Create three-panel layout: chat | checkpoints | investigation
+local leftPanel = Instance.new("Frame")
+leftPanel.Size = UDim2.new(0.7, 0, 1, -120)
+leftPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+leftPanel.BorderSizePixel = 0
+leftPanel.Parent = main
+
+local rightPanel = Instance.new("Frame")
+rightPanel.Size = UDim2.new(0.3, -1, 1, -120)
+rightPanel.Position = UDim2.new(0.7, 1, 0, 0)
+rightPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+rightPanel.BorderSizePixel = 0
+rightPanel.Parent = main
+
+-- Right panel label (Checkpoints)
+local checkpointLabel = Instance.new("TextLabel")
+checkpointLabel.Size = UDim2.new(1, 0, 0, 30)
+checkpointLabel.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+checkpointLabel.TextColor3 = Color3.fromRGB(100, 150, 200)
+checkpointLabel.TextSize = 11
+checkpointLabel.Font = Enum.Font.GothamBold
+checkpointLabel.Text = "🔄 Checkpoints"
+checkpointLabel.BorderSizePixel = 0
+checkpointLabel.Parent = rightPanel
+
+-- Checkpoint list
+local checkpointList = Instance.new("ScrollingFrame")
+checkpointList.Size = UDim2.new(1, 0, 1, -30)
+checkpointList.Position = UDim2.new(0, 0, 0, 30)
+checkpointList.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+checkpointList.BorderSizePixel = 0
+checkpointList.ScrollBarThickness = 4
+checkpointList.CanvasSize = UDim2.new(1, 0, 0, 0)
+checkpointList.Parent = rightPanel
+
+local checkpointLayout = Instance.new("UIListLayout")
+checkpointLayout.Padding = UDim.new(0, 4)
+checkpointLayout.FillDirection = Enum.FillDirection.Vertical
+checkpointLayout.SortOrder = Enum.SortOrder.LayoutOrder
+checkpointLayout.Parent = checkpointList
+
+local checkpointPadding = Instance.new("UIPadding")
+checkpointPadding.PaddingLeft = UDim.new(0, 6)
+checkpointPadding.PaddingRight = UDim.new(0, 6)
+checkpointPadding.PaddingTop = UDim.new(0, 6)
+checkpointPadding.PaddingBottom = UDim.new(0, 6)
+checkpointPadding.Parent = checkpointList
+
+-- Chat area (left panel)
 local chatContainer = Instance.new("ScrollingFrame")
-chatContainer.Size = UDim2.new(1, 0, 1, -120)
+chatContainer.Size = UDim2.new(1, 0, 1, 0)
 chatContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 chatContainer.BorderSizePixel = 0
 chatContainer.ScrollBarThickness = 6
 chatContainer.CanvasSize = UDim2.new(1, 0, 0, 0)
-chatContainer.Parent = main
+chatContainer.Parent = leftPanel
 
 local chatLayout = Instance.new("UIListLayout")
 chatLayout.Padding = UDim.new(0, 8)
@@ -412,6 +492,110 @@ local function addMessage(text, isUser, isCode)
 	task.wait(0.05)
 	chatContainer.CanvasSize = UDim2.new(1, 0, 0, chatLayout.AbsoluteContentSize.Y + 20)
 	chatContainer.CanvasPosition = Vector2.new(0, math.max(0, chatLayout.AbsoluteContentSize.Y - chatContainer.AbsoluteSize.Y + 20))
+end
+
+-- Update checkpoint list UI
+local function updateCheckpointList()
+	-- Clear existing checkpoints
+	for _, child in ipairs(checkpointList:GetChildren()) do
+		if child:IsA("Frame") and child ~= checkpointLayout and child ~= checkpointPadding then
+			child:Destroy()
+		end
+	end
+	
+	-- Add new checkpoints
+	for i, checkpoint in ipairs(Checkpoint.getAll()) do
+		local cpFrame = Instance.new("Frame")
+		cpFrame.Size = UDim2.new(1, 0, 0, 70)
+		cpFrame.BackgroundColor3 = Color3.fromRGB(25, 28, 35)
+		cpFrame.BorderSizePixel = 0
+		cpFrame.LayoutOrder = i
+		cpFrame.Parent = checkpointList
+		
+		local cpCorner = Instance.new("UICorner")
+		cpCorner.CornerRadius = UDim.new(0, 6)
+		cpCorner.Parent = cpFrame
+		
+		-- Title
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.Size = UDim2.new(1, -10, 0, 20)
+		titleLabel.Position = UDim2.new(0, 5, 0, 5)
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+		titleLabel.TextSize = 10
+		titleLabel.Font = Enum.Font.GothamBold
+		titleLabel.Text = "✓ " .. checkpoint.scriptType
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Parent = cpFrame
+		
+		-- Time
+		local timeLabel = Instance.new("TextLabel")
+		timeLabel.Size = UDim2.new(1, -10, 0, 15)
+		timeLabel.Position = UDim2.new(0, 5, 0, 25)
+		timeLabel.BackgroundTransparency = 1
+		timeLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		timeLabel.TextSize = 8
+		timeLabel.Font = Enum.Font.Gotham
+		timeLabel.Text = os.date("%H:%M:%S", checkpoint.timestamp)
+		timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+		timeLabel.Parent = cpFrame
+		
+		-- Restore button
+		local restoreBtn = Instance.new("TextButton")
+		restoreBtn.Size = UDim2.new(0, 55, 0, 20)
+		restoreBtn.Position = UDim2.new(0, 5, 0, 48)
+		restoreBtn.BackgroundColor3 = Color3.fromRGB(80, 100, 150)
+		restoreBtn.BorderSizePixel = 0
+		restoreBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		restoreBtn.TextSize = 9
+		restoreBtn.Font = Enum.Font.GothamBold
+		restoreBtn.Text = "↶ Restore"
+		restoreBtn.Parent = cpFrame
+		
+		local restoreCorner = Instance.new("UICorner")
+		restoreCorner.CornerRadius = UDim.new(0, 4)
+		restoreCorner.Parent = restoreBtn
+		
+		restoreBtn.MouseButton1Click:Connect(function()
+			local restored = Checkpoint.restore(checkpoint.id)
+			if restored then
+				addMessage("🔄 Restored to checkpoint: " .. restored.scriptType, false, false)
+				addMessage(restored.code, false, true)
+				lastGeneratedCode = restored.code
+				lastScriptType = restored.scriptType
+			end
+		end)
+		
+		-- Copy button
+		local copyBtn = Instance.new("TextButton")
+		copyBtn.Size = UDim2.new(0, 55, 0, 20)
+		copyBtn.Position = UDim2.new(0, 65, 0, 48)
+		copyBtn.BackgroundColor3 = Color3.fromRGB(100, 120, 160)
+		copyBtn.BorderSizePixel = 0
+		copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		copyBtn.TextSize = 9
+		copyBtn.Font = Enum.Font.GothamBold
+		copyBtn.Text = "📋 Copy"
+		copyBtn.Parent = cpFrame
+		
+		local copyCorner = Instance.new("UICorner")
+		copyCorner.CornerRadius = UDim.new(0, 4)
+		copyCorner.Parent = copyBtn
+		
+		copyBtn.MouseButton1Click:Connect(function()
+			setclipboard(checkpoint.code)
+			addMessage("✓ Copied to clipboard!", false, false)
+		end)
+	end
+	
+	-- Update canvas size
+	task.wait(0.05)
+	checkpointList.CanvasSize = UDim2.new(1, 0, 0, checkpointLayout.AbsoluteContentSize.Y + 12)
+end
+
+-- Add investigation log entry
+local function logInvestigation(text)
+	addMessage("🔍 " .. text, false, false)
 end
 
 -- Input area
@@ -622,7 +806,12 @@ local function handleMessage()
 	
 	local lower = string.lower(text)
 	if string.find(lower, "make") or string.find(lower, "create") or string.find(lower, "build") or string.find(lower, "add") then
-		addMessage("🔍 Analyzing workspace & generating...", false, false)
+		-- Investigation phase (lemonade.gg style)
+		logInvestigation("Analyzing project structure...")
+		task.wait(0.3)
+		
+		logInvestigation("Scanned " .. #STATE.context.scripts .. " scripts")
+		task.wait(0.2)
 		
 		-- PHASE 2: Smart detection
 		local scriptType = PatternMatcher.detectScriptType(text)
@@ -630,8 +819,16 @@ local function handleMessage()
 		lastScriptType = scriptType
 		lastLocation = location
 		
+		logInvestigation("Detected type: " .. scriptType)
+		task.wait(0.2)
+		
 		local relevant = ContextScanner.findRelevantScripts(text, STATE.context)
+		logInvestigation("Found " .. #relevant .. " relevant scripts")
+		task.wait(0.2)
+		
 		local prompt = OllamaClient.buildPrompt(text, STATE.context, relevant)
+		
+		logInvestigation("Generating code from Ollama...")
 		
 		local success, code = OllamaClient.call(prompt, CONFIG.DEFAULT_MODEL)
 		
@@ -640,8 +837,16 @@ local function handleMessage()
 		
 		if success then
 			lastGeneratedCode = code
+			
+			-- Save checkpoint
+			Checkpoint.save(code, scriptType, "Generated for: " .. text:sub(1, 30))
+			updateCheckpointList()
+			
 			addMessage(code, false, true)
-			addMessage("💡 Detected: " .. scriptType .. " | Generating alternatives...", false, false)
+			logInvestigation("✓ Code generated successfully")
+			
+			logInvestigation("Generating alternatives...")
+			task.wait(0.3)
 			
 			-- Generate alternatives
 			local alts = generateAlternatives(prompt)
@@ -661,7 +866,8 @@ local function handleMessage()
 		end
 	else
 		-- Regular chat
-		addMessage("💭 Thinking...", false, false)
+		logInvestigation("Processing request...")
+		task.wait(0.2)
 		
 		local body = HttpService:JSONEncode({
 			model = CONFIG.DEFAULT_MODEL,
@@ -831,5 +1037,5 @@ plugin.Unloading:Connect(function()
 	widget:Destroy()
 end)
 
-log("✓ Phase 3 loaded: Code analysis + user learning + optimization!")
-addMessage("🍋 Lemonade AI Phase 3\n✅ Smart placement\n✅ Alternative generation\n✅ Code analysis\n✅ User learning system", false, false)
+log("✓ Phase 3.1 loaded: Lemonade.gg-style UI + Checkpoint system!")
+addMessage("🍋 Lemonade AI Phase 3.1\n✅ Smart placement\n✅ Alternative generation\n✅ Code analysis\n✅ User learning\n✅ Checkpoint system (no credits!)", false, false)
