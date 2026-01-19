@@ -1,0 +1,12 @@
+*.rbxm
+*.rbxmx
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+dist/
+build/
+out/

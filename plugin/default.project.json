@@ -1,0 +1,12 @@
+{
+    "name": "OllamaCodeGenerator",
+    "tree": {
+        "$className": "Folder",
+        "OllamaPlugin": {
+            "$path": "plugin/src"
+        },
+        "Version": {
+            "$path": "plugin/Version.txt"
+        }
+    }
+}
