@@ -11,42 +11,28 @@ on:
       - 'plugin/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        required: false
-        description: "Version number (optional, auto-detected if empty)"
 
 jobs:
-  build:
+  build-plugin:
+    name: Build plugin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup aftman
         uses: ok-nick/setup-aftman@v0.4.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version
-        id: version
-        run: |
-          if [ -z "${{ github.event.inputs.version }}" ]; then
-            VERSION=$(cat plugin/Version.txt | tr -d '\r\n')
-          else
-            VERSION=${{ github.event.inputs.version }}
-            echo $VERSION > plugin/Version.txt
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Get plugin version
+        run: echo "pluginVersion=$(cat plugin/Version.txt)" >> $GITHUB_ENV
 
-      - name: Build rbxm
-        run: rojo build plugin -o OllamaCodeGenerator-v${{ steps.version.outputs.version }}.rbxm
+      - name: Build plugin
+        run: rojo build plugin --output OllamaAI-${{ env.pluginVersion }}.rbxm
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          files: OllamaCodeGenerator-v${{ steps.version.outputs.version }}.rbxm
+          tag_name: v${{ env.pluginVersion }}
+          files: OllamaAI-${{ env.pluginVersion }}.rbxm
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
