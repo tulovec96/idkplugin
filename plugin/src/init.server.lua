@@ -370,7 +370,7 @@ local widget = plugin:CreateDockWidgetPluginGui(
 	"Lemonade AI",
 	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1000, 700, 1000, 700)
 )
-widget.Title = "🍋 Lemonade AI - Phase 3.1"
+widget.Title = "🍋 Lemonade AI - Clean"
 
 local toggleButton = toolbar:CreateButton("Toggle", "Show/Hide", "rbxasset://textures/DragLockedCursor.png")
 toggleButton.Click:Connect(function()
@@ -653,63 +653,50 @@ local sendCorner = Instance.new("UICorner")
 sendCorner.CornerRadius = UDim.new(0, 6)
 sendCorner.Parent = sendBtn
 
--- Alternative buttons
-local altContainer = Instance.new("Frame")
-altContainer.Size = UDim2.new(1, 0, 0, 35)
-altContainer.Position = UDim2.new(0, 0, 1, -35)
-altContainer.BackgroundTransparency = 1
-altContainer.Parent = inputArea
+-- Clean action buttons (no alternatives clutter)
+local actionContainer = Instance.new("Frame")
+actionContainer.Size = UDim2.new(1, 0, 0, 35)
+actionContainer.Position = UDim2.new(0, 0, 1, -35)
+actionContainer.BackgroundTransparency = 1
+actionContainer.Parent = inputArea
 
-local altLayout = Instance.new("UIListLayout")
-altLayout.FillDirection = Enum.FillDirection.Horizontal
-altLayout.Padding = UDim.new(0, 5)
-altLayout.SortOrder = Enum.SortOrder.LayoutOrder
-altLayout.Parent = altContainer
+local actionLayout = Instance.new("UIListLayout")
+actionLayout.FillDirection = Enum.FillDirection.Horizontal
+actionLayout.Padding = UDim.new(0, 5)
+actionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+actionLayout.Parent = actionContainer
 
-local insertBtn = Instance.new("TextButton")
-insertBtn.Size = UDim2.new(0, 100, 0, 32)
-insertBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 50)
-insertBtn.BorderSizePixel = 0
-insertBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-insertBtn.TextSize = 11
-insertBtn.Font = Enum.Font.GothamBold
-insertBtn.Text = "✓ Insert Code"
-insertBtn.LayoutOrder = 1
-insertBtn.Parent = altContainer
+-- Inject button (direct script injection into running game)
+local injectBtn = Instance.new("TextButton")
+injectBtn.Size = UDim2.new(0, 100, 0, 32)
+injectBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 100)
+injectBtn.BorderSizePixel = 0
+injectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+injectBtn.TextSize = 11
+injectBtn.Font = Enum.Font.GothamBold
+injectBtn.Text = "💉 Inject"
+injectBtn.LayoutOrder = 1
+injectBtn.Parent = actionContainer
 
-local insertCorner = Instance.new("UICorner")
-insertCorner.CornerRadius = UDim.new(0, 6)
-insertCorner.Parent = insertBtn
+local injectCorner = Instance.new("UICorner")
+injectCorner.CornerRadius = UDim.new(0, 6)
+injectCorner.Parent = injectBtn
 
-local alt1Btn = Instance.new("TextButton")
-alt1Btn.Size = UDim2.new(0, 80, 0, 32)
-alt1Btn.BackgroundColor3 = Color3.fromRGB(60, 100, 150)
-alt1Btn.BorderSizePixel = 0
-alt1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-alt1Btn.TextSize = 11
-alt1Btn.Font = Enum.Font.GothamBold
-alt1Btn.Text = "Option A"
-alt1Btn.LayoutOrder = 2
-alt1Btn.Parent = altContainer
+-- Copy to clipboard button
+local copyClipBtn = Instance.new("TextButton")
+copyClipBtn.Size = UDim2.new(0, 100, 0, 32)
+copyClipBtn.BackgroundColor3 = Color3.fromRGB(100, 120, 160)
+copyClipBtn.BorderSizePixel = 0
+copyClipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyClipBtn.TextSize = 11
+copyClipBtn.Font = Enum.Font.GothamBold
+copyClipBtn.Text = "📋 Copy"
+copyClipBtn.LayoutOrder = 2
+copyClipBtn.Parent = actionContainer
 
-local alt1Corner = Instance.new("UICorner")
-alt1Corner.CornerRadius = UDim.new(0, 6)
-alt1Corner.Parent = alt1Btn
-
-local alt2Btn = Instance.new("TextButton")
-alt2Btn.Size = UDim2.new(0, 80, 0, 32)
-alt2Btn.BackgroundColor3 = Color3.fromRGB(60, 100, 150)
-alt2Btn.BorderSizePixel = 0
-alt2Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-alt2Btn.TextSize = 11
-alt2Btn.Font = Enum.Font.GothamBold
-alt2Btn.Text = "Option B"
-alt2Btn.LayoutOrder = 3
-alt2Btn.Parent = altContainer
-
-local alt2Corner = Instance.new("UICorner")
-alt2Corner.CornerRadius = UDim.new(0, 6)
-alt2Corner.Parent = alt2Btn
+local copyClipCorner = Instance.new("UICorner")
+copyClipCorner.CornerRadius = UDim.new(0, 6)
+copyClipCorner.Parent = copyClipBtn
 
 local contextLabel = Instance.new("TextLabel")
 contextLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -717,10 +704,10 @@ contextLabel.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
 contextLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 contextLabel.TextSize = 9
 contextLabel.Font = Enum.Font.Gotham
-contextLabel.Text = "📚 " .. #STATE.context.scripts .. " scripts | 🎯 Smart placement enabled"
+contextLabel.Text = "📚 " .. #STATE.context.scripts .. " scripts"
 contextLabel.Parent = inputArea
 
--- PHASE 3: New buttons
+-- Feedback buttons (below)
 local feedbackContainer = Instance.new("Frame")
 feedbackContainer.Size = UDim2.new(1, 0, 0, 35)
 feedbackContainer.Position = UDim2.new(0, 0, 1, -70)
@@ -851,21 +838,6 @@ local function handleMessage()
 			addMessage(code, false, true)
 			logInvestigation("✓ Code generated successfully")
 			
-			logInvestigation("Generating alternatives...")
-			task.wait(0.3)
-			
-			-- Generate alternatives
-			local alts = generateAlternatives(prompt)
-			currentAlternatives = alts
-			STATE.showingAlternatives = true
-			
-			if #alts > 0 then
-				addMessage("✓ Alternative A ready", false, false)
-			end
-			if #alts > 1 then
-				addMessage("✓ Alternative B ready", false, false)
-			end
-			
 			Memory.save(text, code)
 		else
 			addMessage("❌ Error: " .. code, false, false)
@@ -900,21 +872,60 @@ local function handleMessage()
 	STATE.isGenerating = false
 end
 
-insertBtn.MouseButton1Click:Connect(function()
+-- ============================================================================
+-- SCRIPT INJECTION & BUTTON HANDLERS
+-- ============================================================================
+
+-- Inject code into running game
+injectBtn.MouseButton1Click:Connect(function()
 	if lastGeneratedCode == "" then
 		addMessage("❌ Generate code first!", false, false)
 		return
 	end
 	
-	StudioIntegration.insertCode(lastGeneratedCode, lastScriptType, lastLocation)
-	addMessage("✅ " .. lastScriptType .. " inserted into " .. lastLocation.Name, false, false)
-	lastGeneratedCode = ""
+	-- Create a LocalScript in StarterPlayer to inject code
+	local injectionCode = [[
+local injectedCode = [[
+]] .. lastGeneratedCode .. [[
+]]
+load(injectedCode)()
+]]
+	
+	-- Try multiple injection points
+	local starterPlayer = game:GetService("StarterPlayer")
+	
+	-- Try StarterPlayerScripts first
+	local starterScripts = starterPlayer:FindFirstChild("StarterPlayerScripts")
+	if not starterScripts then
+		starterScripts = Instance.new("LocalScript")
+		starterScripts.Name = "StarterPlayerScripts"
+		starterScripts.Parent = starterPlayer
+	end
+	
+	local injectedScript = Instance.new("LocalScript")
+	injectedScript.Name = "Injected_" .. tostring(math.random(10000, 99999))
+	injectedScript.Source = injectionCode
+	injectedScript.Parent = starterScripts
+	
+	addMessage("💉 Code injected into StarterPlayerScripts", false, false)
+	addMessage("⚠️ Requires game restart to execute", false, false)
+	
+	-- Also log the action
+	Memory.save("Injected: " .. lastScriptType, lastGeneratedCode)
 end)
 
--- ============================================================================
--- PHASE 3: FEEDBACK & ANALYSIS BUTTONS
--- ============================================================================
+-- Copy to clipboard
+copyClipBtn.MouseButton1Click:Connect(function()
+	if lastGeneratedCode == "" then
+		addMessage("❌ Generate code first!", false, false)
+		return
+	end
+	
+	setclipboard(lastGeneratedCode)
+	addMessage("📋 Copied " .. tostring(#lastGeneratedCode) .. " chars to clipboard!", false, false)
+end)
 
+-- Feedback buttons
 thumbsUpBtn.MouseButton1Click:Connect(function()
 	if lastGeneratedCode == "" then
 		addMessage("❌ Generate code first!", false, false)
@@ -922,11 +933,7 @@ thumbsUpBtn.MouseButton1Click:Connect(function()
 	end
 	
 	AdvancedLearning.recordThumbsUp(lastGeneratedCode)
-	addMessage("✅ Feedback recorded! Learning your preferences...", false, false)
-	
-	if #currentAlternatives > 1 then
-		addMessage("💡 I'll prioritize similar patterns next time!", false, false)
-	end
+	addMessage("✅ Liked! Learning your style...", false, false)
 end)
 
 thumbsDownBtn.MouseButton1Click:Connect(function()
@@ -936,101 +943,10 @@ thumbsDownBtn.MouseButton1Click:Connect(function()
 	end
 	
 	AdvancedLearning.recordThumbsDown(lastGeneratedCode)
-	addMessage("👎 Noted. I'll try different approaches next time.", false, false)
+	addMessage("👎 Disliked. I'll avoid this approach.", false, false)
 end)
-
-analyzeBtn.MouseButton1Click:Connect(function()
-	if lastGeneratedCode == "" then
-		addMessage("❌ Generate code first!", false, false)
 		return
 	end
-	
-	if STATE.isGenerating then return end
-	STATE.isGenerating = true
-	
-	addMessage("🔍 Analyzing code structure...", false, false)
-	
-	task.wait(0.3)
-	
-	-- Analyze code
-	local analysis = CodeAnalyzer.suggestOptimizations(lastGeneratedCode)
-	addMessage("📊 Optimization Suggestions:\n" .. analysis, false, false)
-	
-	-- Check dependencies
-	local depends = CodeAnalyzer.analyzeRequires(lastGeneratedCode)
-	if #depends > 0 then
-		addMessage("📦 Dependencies found:\n• " .. table.concat(depends, "\n• "), false, false)
-	end
-	
-	-- Check remotes
-	local remotes = CodeAnalyzer.analyzeRemotes(lastGeneratedCode)
-	if #remotes > 0 then
-		addMessage("🔌 RemoteEvents detected:\n• " .. table.concat(remotes, "\n• "), false, false)
-	else
-		addMessage("✓ No RemoteEvents (good for server-only scripts!)", false, false)
-	end
-	
-	STATE.isGenerating = false
-end)
-
-optimizeBtn.MouseButton1Click:Connect(function()
-	if lastGeneratedCode == "" then
-		addMessage("❌ Generate code first!", false, false)
-		return
-	end
-	
-	if STATE.isGenerating then return end
-	STATE.isGenerating = true
-	
-	addMessage("⚡ Generating optimized version...", false, false)
-	
-	-- Build optimization prompt
-	local optimizePrompt = [[You are a Roblox Lua optimization expert. Here is code that needs improvement:
-
-``` lua
-]] .. lastGeneratedCode .. [[
-```
-
-Please provide an optimized version that:
-1. Follows best practices for Roblox
-2. Adds error handling (pcall where needed)
-3. Uses task.wait() instead of wait()
-4. Reduces memory usage
-5. Adds helpful comments
-
-IMPORTANT: Output ONLY the improved code, no explanations.]]
-	
-	local success, optimized = OllamaClient.call(optimizePrompt, CONFIG.DEFAULT_MODEL)
-	
-	if success then
-		lastGeneratedCode = optimized
-		currentAlternatives = {optimized}
-		addMessage(optimized, false, true)
-		addMessage("✨ Code optimized! Key improvements:\n✓ Error handling\n✓ Performance\n✓ Best practices", false, false)
-		STATE.showingAlternatives = true
-	else
-		addMessage("❌ Optimization failed: " .. optimized, false, false)
-	end
-	
-	STATE.isGenerating = false
-end)
-
-alt1Btn.MouseButton1Click:Connect(function()
-	if currentAlternatives[1] then
-		lastGeneratedCode = currentAlternatives[1]
-		addMessage("✓ Selected Option A", false, false)
-		addMessage(currentAlternatives[1], false, true)
-	end
-end)
-
-alt2Btn.MouseButton1Click:Connect(function()
-	if currentAlternatives[2] then
-		lastGeneratedCode = currentAlternatives[2]
-		addMessage("✓ Selected Option B", false, false)
-		addMessage(currentAlternatives[2], false, true)
-	end
-end)
-
 sendBtn.MouseButton1Click:Connect(handleMessage)
 textInput.InputEnded:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then return end
@@ -1043,5 +959,5 @@ plugin.Unloading:Connect(function()
 	widget:Destroy()
 end)
 
-log("✓ Phase 3.1 loaded: Lemonade.gg-style UI + Checkpoint system!")
-addMessage("🍋 Lemonade AI Phase 3.1\n✅ Smart placement\n✅ Alternative generation\n✅ Code analysis\n✅ User learning\n✅ Checkpoint system (no credits!)", false, false)
+log("✓ Phase 3.2 loaded: Clean UI + Script injection!")
+addMessage("🍋 Lemonade AI (Clean)\n💉 Inject code into running game\n📋 Copy to clipboard\n🔄 Checkpoint system\n🎯 Investigation logs", false, false)
