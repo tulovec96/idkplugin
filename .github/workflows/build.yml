@@ -25,6 +25,8 @@ jobs:
 
       - name: Setup aftman
         uses: ok-nick/setup-aftman@v0.4.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get version
         id: version
