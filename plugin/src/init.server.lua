@@ -26,6 +26,28 @@ local STATE = {
 	scriptType = "LocalScript"
 }
 
+-- Get workspace structure overview
+local function getWorkspaceOverview()
+	local overview = "=== WORKSPACE OVERVIEW ===\n"
+	
+	-- Services
+	overview = overview .. "\nServices:\n"
+	local services = {workspace, game:GetService("ServerScriptService"), game:GetService("ServerStorage"), game:GetService("ReplicatedStorage")}
+	for _, service in ipairs(services) do
+		overview = overview .. "• " .. service.Name .. " - " .. tostring(#service:GetChildren()) .. " items\n"
+		for i, child in ipairs(service:GetChildren()) do
+			if i <= 5 then
+				overview = overview .. "  - " .. child.Name .. " (" .. child.ClassName .. ")\n"
+			end
+		end
+		if #service:GetChildren() > 5 then
+			overview = overview .. "  ... and " .. (#service:GetChildren() - 5) .. " more\n"
+		end
+	end
+	
+	return overview
+end
+
 local function log(msg)
 	print("[🤖 OllamaAI] " .. msg)
 end
@@ -38,6 +60,10 @@ local function callOllama(prompt, model, isCodeGen)
 	local fullPrompt = prompt
 	if isCodeGen then
 		fullPrompt = "You are a Roblox Lua developer. Generate code for Roblox Studio. The code will be placed in a " .. STATE.scriptType .. " in a Roblox game.\n\nRequest: " .. prompt .. "\n\nProvide ONLY the Lua code, no explanations."
+	else
+		-- Include workspace context for planning
+		local workspaceInfo = getWorkspaceOverview()
+		fullPrompt = "You are a Roblox game development expert. Help plan how to implement features in a Roblox game.\n\n" .. workspaceInfo .. "\n\nUser request: " .. prompt .. "\n\nProvide a detailed step-by-step plan, considering what's already in the workspace."
 	end
 	
 	local body = HttpService:JSONEncode({
@@ -246,28 +272,44 @@ sendCorner.Parent = sendBtn
 
 -- Generate script button
 local genScriptBtn = Instance.new("TextButton")
-genScriptBtn.Size = UDim2.new(0, 100, 0, 30)
-genScriptBtn.Position = UDim2.new(1, -160, 0, 90)
+genScriptBtn.Size = UDim2.new(0, 95, 0, 30)
+genScriptBtn.Position = UDim2.new(1, -250, 0, 90)
 genScriptBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
 genScriptBtn.BorderSizePixel = 0
 genScriptBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-genScriptBtn.TextSize = 12
+genScriptBtn.TextSize = 11
 genScriptBtn.Font = Enum.Font.GothamBold
-genScriptBtn.Text = "💾 Gen Script"
+genScriptBtn.Text = "📋 Plan"
 genScriptBtn.Parent = controlPanel
 
 local genCorner = Instance.new("UICorner")
 genCorner.CornerRadius = UDim.new(0, 6)
 genCorner.Parent = genScriptBtn
 
+-- Generate code button
+local codeBtn = Instance.new("TextButton")
+codeBtn.Size = UDim2.new(0, 95, 0, 30)
+codeBtn.Position = UDim2.new(1, -150, 0, 90)
+codeBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 50)
+codeBtn.BorderSizePixel = 0
+codeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+codeBtn.TextSize = 11
+codeBtn.Font = Enum.Font.GothamBold
+codeBtn.Text = "💻 Code"
+codeBtn.Parent = controlPanel
+
+local codeCorner = Instance.new("UICorner")
+codeCorner.CornerRadius = UDim.new(0, 6)
+codeCorner.Parent = codeBtn
+
 -- Insert script button
 local insertBtn = Instance.new("TextButton")
-insertBtn.Size = UDim2.new(0, 100, 0, 30)
-insertBtn.Position = UDim2.new(1, -55, 0, 90)
+insertBtn.Size = UDim2.new(0, 95, 0, 30)
+insertBtn.Position = UDim2.new(1, -50, 0, 90)
 insertBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
 insertBtn.BorderSizePixel = 0
 insertBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-insertBtn.TextSize = 12
+insertBtn.TextSize = 11
 insertBtn.Font = Enum.Font.GothamBold
 insertBtn.Text = "➕ Insert"
 insertBtn.Parent = controlPanel
@@ -304,12 +346,38 @@ local function sendMessage()
 	end
 end
 
--- Handle generate script
+-- Handle generate plan
 genScriptBtn.MouseButton1Click:Connect(function()
 	local prompt = textInput.Text
 	if prompt == "" or STATE.isGenerating then return end
 	
 	addMessage("📝 " .. prompt, true, false)
+	textInput.Text = ""
+	
+	addMessage("⏳ Analyzing workspace and creating plan...", false, false)
+	
+	local success, plan = callOllama(prompt, CONFIG.DEFAULT_MODEL, false)
+	if success then
+		-- Remove loading message
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		
+		addMessage(plan, false, false)
+		log("Generated plan: " .. string.len(plan) .. " chars")
+	else
+		-- Remove loading message
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		addMessage("✗ Error: " .. plan, false, false)
+	end
+end)
+
+-- Handle generate code
+codeBtn.MouseButton1Click:Connect(function()
+	local prompt = textInput.Text
+	if prompt == "" or STATE.isGenerating then return end
+	
+	addMessage("💻 " .. prompt, true, false)
 	textInput.Text = ""
 	
 	addMessage("⏳ Generating " .. STATE.scriptType .. "...", false, false)
