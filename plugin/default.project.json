@@ -1,12 +1,12 @@
 {
     "name": "OllamaCodeGenerator",
     "tree": {
-        "$className": "Folder",
-        "OllamaPlugin": {
-            "$path": "src"
+        "$className": "Plugin",
+        "$properties": {
+            "Name": "OllamaCodeGenerator"
         },
-        "Version": {
-            "$path": "Version.txt"
+        "OllamaAI": {
+            "$path": "src/init.lua"
         }
     }
 }
