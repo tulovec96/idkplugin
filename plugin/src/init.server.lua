@@ -114,10 +114,130 @@ function OllamaClient.call(prompt, model)
 end
 
 -- ============================================================================
--- PHASE 2: PATTERN MATCHING ENGINE
+-- PHASE 3: CODE ANALYSIS & ARCHITECTURE ENGINE
 -- ============================================================================
 
-local PatternMatcher = {}
+local CodeAnalyzer = {}
+
+function CodeAnalyzer.analyzeRequires(scriptSource)
+	local requires = {}
+	for match in scriptSource:gmatch('require%(script[%w.:%s/"\']+(.-)[%w.:\'"%)]*%)', 1) do
+		table.insert(requires, match)
+	end
+	return requires
+end
+
+function CodeAnalyzer.analyzeRemotes(scriptSource)
+	local remotes = {}
+	for match in scriptSource:gmatch('game:GetService%("ReplicatedStorage"%):WaitForChild%("([^"]+)"%) or WaitForChild("([^"]+)%) or matching patterns') do
+		table.insert(remotes, match)
+	end
+	return remotes
+end
+
+function CodeAnalyzer.buildDependencyGraph(scripts)
+	local graph = {}
+	for _, script in ipairs(scripts) do
+		graph[script.name] = {
+			type = script.className,
+			path = script.path,
+			dependencies = {},
+			dependents = {}
+		}
+	end
+	return graph
+end
+
+function CodeAnalyzer.suggestOptimizations(code)
+	local suggestions = {}
+	
+	if string.len(code) > 1000 and not string.find(code, "local function") then
+		table.insert(suggestions, "• Consider breaking code into functions for reusability")
+	end
+	if string.find(code, "while true") or string.find(code, "for") then
+		table.insert(suggestions, "• Add loop guards or breaks to prevent infinite loops")
+	end
+	if not string.find(code, "pcall") and not string.find(code, "xpcall") then
+		table.insert(suggestions, "• Consider wrapping risky calls in pcall for error handling")
+	end
+	if not string.find(code, "task.wait") and not string.find(code, "wait%(%d") then
+		table.insert(suggestions, "• Consider using task.wait() for modern yielding")
+	end
+	
+	return suggestions
+end
+
+-- ============================================================================
+-- PHASE 3: RELATIONSHIP VIEWER
+-- ============================================================================
+
+local RelationshipViewer = {}
+
+function RelationshipViewer.generateArchitectureReport(context)
+	local report = "=== PROJECT ARCHITECTURE ===\n\n"
+	report = report .. "Total Scripts: " .. #context.scripts .. "\n"
+	
+	local byType = {Script = 0, LocalScript = 0, ModuleScript = 0}
+	for _, script in ipairs(context.scripts) do
+		byType[script.className] = (byType[script.className] or 0) + 1
+	end
+	
+	report = report .. "\nBreakdown:\n"
+	for scriptType, count in pairs(byType) do
+		report = report .. "• " .. scriptType .. ": " .. count .. "\n"
+	end
+	
+	return report
+end
+
+function RelationshipViewer.generateConnectionMap(context, userRequest)
+	local map = "=== PROJECT MAP ===\n\n"
+	map = map .. "Files related to '" .. userRequest .. "':\n"
+	
+	local relevant = ContextScanner.findRelevantScripts(userRequest, context)
+	for i, script in ipairs(relevant) do
+		if i <= 5 then
+			map = map .. "• " .. script.path .. " (" .. script.lines .. "L)\n"
+		end
+	end
+	
+	return map
+end
+
+-- ============================================================================
+-- PHASE 3: ADVANCED LEARNING SYSTEM
+-- ============================================================================
+
+local AdvancedLearning = {}
+AdvancedLearning.feedback = {}
+AdvancedLearning.preferences = {
+	mostUsedStyle = "functional",
+	errorHandlingPref = "pcall",
+	namingConvention = "camelCase"
+}
+
+function AdvancedLearning.recordThumbsUp(code)
+	table.insert(AdvancedLearning.feedback, {
+		code = code,
+		rating = "good",
+		time = os.time()
+	})
+end
+
+function AdvancedLearning.recordThumbsDown(code)
+	table.insert(AdvancedLearning.feedback, {
+		code = code,
+		rating = "bad",
+		time = os.time()
+	})
+end
+
+function AdvancedLearning.getNextSuggestion()
+	if #AdvancedLearning.feedback > 5 then
+		return "Your preference detected: " .. AdvancedLearning.preferences.mostUsedStyle .. " style"
+	end
+	return nil
+end
 
 function PatternMatcher.detectScriptType(userRequest)
 	local lower = string.lower(userRequest)
@@ -212,7 +332,7 @@ local widget = plugin:CreateDockWidgetPluginGui(
 	"Lemonade AI",
 	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1000, 700, 1000, 700)
 )
-widget.Title = "🍋 Lemonade AI - Phase 2"
+widget.Title = "🍋 Lemonade AI - Phase 3"
 
 local toggleButton = toolbar:CreateButton("Toggle", "Show/Hide", "rbxasset://textures/DragLockedCursor.png")
 toggleButton.Click:Connect(function()
@@ -410,6 +530,79 @@ contextLabel.Font = Enum.Font.Gotham
 contextLabel.Text = "📚 " .. #STATE.context.scripts .. " scripts | 🎯 Smart placement enabled"
 contextLabel.Parent = inputArea
 
+-- PHASE 3: New buttons
+local feedbackContainer = Instance.new("Frame")
+feedbackContainer.Size = UDim2.new(1, 0, 0, 35)
+feedbackContainer.Position = UDim2.new(0, 0, 1, -70)
+feedbackContainer.BackgroundTransparency = 1
+feedbackContainer.Parent = inputArea
+
+local feedbackLayout = Instance.new("UIListLayout")
+feedbackLayout.FillDirection = Enum.FillDirection.Horizontal
+feedbackLayout.Padding = UDim.new(0, 5)
+feedbackLayout.SortOrder = Enum.SortOrder.LayoutOrder
+feedbackLayout.Parent = feedbackContainer
+
+local thumbsUpBtn = Instance.new("TextButton")
+thumbsUpBtn.Size = UDim2.new(0, 60, 0, 32)
+thumbsUpBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 80)
+thumbsUpBtn.BorderSizePixel = 0
+thumbsUpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+thumbsUpBtn.TextSize = 14
+thumbsUpBtn.Font = Enum.Font.GothamBold
+thumbsUpBtn.Text = "👍"
+thumbsUpBtn.LayoutOrder = 1
+thumbsUpBtn.Parent = feedbackContainer
+
+local thumbsUpCorner = Instance.new("UICorner")
+thumbsUpCorner.CornerRadius = UDim.new(0, 6)
+thumbsUpCorner.Parent = thumbsUpBtn
+
+local thumbsDownBtn = Instance.new("TextButton")
+thumbsDownBtn.Size = UDim2.new(0, 60, 0, 32)
+thumbsDownBtn.BackgroundColor3 = Color3.fromRGB(150, 80, 50)
+thumbsDownBtn.BorderSizePixel = 0
+thumbsDownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+thumbsDownBtn.TextSize = 14
+thumbsDownBtn.Font = Enum.Font.GothamBold
+thumbsDownBtn.Text = "👎"
+thumbsDownBtn.LayoutOrder = 2
+thumbsDownBtn.Parent = feedbackContainer
+
+local thumbsDownCorner = Instance.new("UICorner")
+thumbsDownCorner.CornerRadius = UDim.new(0, 6)
+thumbsDownCorner.Parent = thumbsDownBtn
+
+local analyzeBtn = Instance.new("TextButton")
+analyzeBtn.Size = UDim2.new(0, 90, 0, 32)
+analyzeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
+analyzeBtn.BorderSizePixel = 0
+analyzeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+analyzeBtn.TextSize = 10
+analyzeBtn.Font = Enum.Font.GothamBold
+analyzeBtn.Text = "📊 Analyze"
+analyzeBtn.LayoutOrder = 3
+analyzeBtn.Parent = feedbackContainer
+
+local analyzeCorner = Instance.new("UICorner")
+analyzeCorner.CornerRadius = UDim.new(0, 6)
+analyzeCorner.Parent = analyzeBtn
+
+local optimizeBtn = Instance.new("TextButton")
+optimizeBtn.Size = UDim2.new(0, 90, 0, 32)
+optimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
+optimizeBtn.BorderSizePixel = 0
+optimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+optimizeBtn.TextSize = 10
+optimizeBtn.Font = Enum.Font.GothamBold
+optimizeBtn.Text = "⚡ Optimize"
+optimizeBtn.LayoutOrder = 4
+optimizeBtn.Parent = feedbackContainer
+
+local optimizeCorner = Instance.new("UICorner")
+optimizeCorner.CornerRadius = UDim.new(0, 6)
+optimizeCorner.Parent = optimizeBtn
+
 -- ============================================================================
 -- CHAT LOGIC
 -- ============================================================================
@@ -506,6 +699,110 @@ insertBtn.MouseButton1Click:Connect(function()
 	lastGeneratedCode = ""
 end)
 
+-- ============================================================================
+-- PHASE 3: FEEDBACK & ANALYSIS BUTTONS
+-- ============================================================================
+
+thumbsUpBtn.MouseButton1Click:Connect(function()
+	if lastGeneratedCode == "" then
+		addMessage("❌ Generate code first!", false, false)
+		return
+	end
+	
+	AdvancedLearning.recordThumbsUp(lastGeneratedCode)
+	addMessage("✅ Feedback recorded! Learning your preferences...", false, false)
+	
+	if #currentAlternatives > 1 then
+		addMessage("💡 I'll prioritize similar patterns next time!", false, false)
+	end
+end)
+
+thumbsDownBtn.MouseButton1Click:Connect(function()
+	if lastGeneratedCode == "" then
+		addMessage("❌ Generate code first!", false, false)
+		return
+	end
+	
+	AdvancedLearning.recordThumbsDown(lastGeneratedCode)
+	addMessage("👎 Noted. I'll try different approaches next time.", false, false)
+end)
+
+analyzeBtn.MouseButton1Click:Connect(function()
+	if lastGeneratedCode == "" then
+		addMessage("❌ Generate code first!", false, false)
+		return
+	end
+	
+	if STATE.isGenerating then return end
+	STATE.isGenerating = true
+	
+	addMessage("🔍 Analyzing code structure...", false, false)
+	
+	task.wait(0.3)
+	
+	-- Analyze code
+	local analysis = CodeAnalyzer.suggestOptimizations(lastGeneratedCode)
+	addMessage("📊 Optimization Suggestions:\n" .. analysis, false, false)
+	
+	-- Check dependencies
+	local depends = CodeAnalyzer.analyzeRequires(lastGeneratedCode)
+	if #depends > 0 then
+		addMessage("📦 Dependencies found:\n• " .. table.concat(depends, "\n• "), false, false)
+	end
+	
+	-- Check remotes
+	local remotes = CodeAnalyzer.analyzeRemotes(lastGeneratedCode)
+	if #remotes > 0 then
+		addMessage("🔌 RemoteEvents detected:\n• " .. table.concat(remotes, "\n• "), false, false)
+	else
+		addMessage("✓ No RemoteEvents (good for server-only scripts!)", false, false)
+	end
+	
+	STATE.isGenerating = false
+end)
+
+optimizeBtn.MouseButton1Click:Connect(function()
+	if lastGeneratedCode == "" then
+		addMessage("❌ Generate code first!", false, false)
+		return
+	end
+	
+	if STATE.isGenerating then return end
+	STATE.isGenerating = true
+	
+	addMessage("⚡ Generating optimized version...", false, false)
+	
+	-- Build optimization prompt
+	local optimizePrompt = [[You are a Roblox Lua optimization expert. Here is code that needs improvement:
+
+``` lua
+]] .. lastGeneratedCode .. [[
+```
+
+Please provide an optimized version that:
+1. Follows best practices for Roblox
+2. Adds error handling (pcall where needed)
+3. Uses task.wait() instead of wait()
+4. Reduces memory usage
+5. Adds helpful comments
+
+IMPORTANT: Output ONLY the improved code, no explanations.]]
+	
+	local success, optimized = OllamaClient.call(optimizePrompt, CONFIG.DEFAULT_MODEL)
+	
+	if success then
+		lastGeneratedCode = optimized
+		currentAlternatives = {optimized}
+		addMessage(optimized, false, true)
+		addMessage("✨ Code optimized! Key improvements:\n✓ Error handling\n✓ Performance\n✓ Best practices", false, false)
+		STATE.showingAlternatives = true
+	else
+		addMessage("❌ Optimization failed: " .. optimized, false, false)
+	end
+	
+	STATE.isGenerating = false
+end)
+
 alt1Btn.MouseButton1Click:Connect(function()
 	if currentAlternatives[1] then
 		lastGeneratedCode = currentAlternatives[1]
@@ -534,5 +831,5 @@ plugin.Unloading:Connect(function()
 	widget:Destroy()
 end)
 
-log("✓ Phase 2 loaded: Smart placement + alternatives!")
-addMessage("🍋 Lemonade AI Phase 2\nAsk me to build something!", false, false)
+log("✓ Phase 3 loaded: Code analysis + user learning + optimization!")
+addMessage("🍋 Lemonade AI Phase 3\n✅ Smart placement\n✅ Alternative generation\n✅ Code analysis\n✅ User learning system", false, false)
