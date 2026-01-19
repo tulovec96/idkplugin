@@ -5,7 +5,8 @@
         "$properties": {
             "Name": "OllamaCodeGenerator"
         },
-        "OllamaAI": {
+        "init": {
+            "$className": "LocalScript",
             "$path": "src/init.lua"
         }
     }
