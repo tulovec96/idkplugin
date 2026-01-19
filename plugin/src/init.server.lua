@@ -1,6 +1,6 @@
 --[[
 	Ollama AI Code Generator Pro
-	Chat interface with AI code generation
+	Chat interface with AI code generation for Roblox Studio
 	Connects to: http://23.88.19.42:11434/
 ]]
 
@@ -21,20 +21,28 @@ local CONFIG = {
 
 local STATE = {
 	isGenerating = false,
-	messageCount = 0
+	messageCount = 0,
+	lastGenCode = "",
+	scriptType = "LocalScript"
 }
 
 local function log(msg)
 	print("[🤖 OllamaAI] " .. msg)
 end
 
-local function callOllama(prompt, model)
+local function callOllama(prompt, model, isCodeGen)
 	if STATE.isGenerating then return false, "Already generating" end
 	STATE.isGenerating = true
 	
+	-- Add Roblox context if generating code
+	local fullPrompt = prompt
+	if isCodeGen then
+		fullPrompt = "You are a Roblox Lua developer. Generate code for Roblox Studio. The code will be placed in a " .. STATE.scriptType .. " in a Roblox game.\n\nRequest: " .. prompt .. "\n\nProvide ONLY the Lua code, no explanations."
+	end
+	
 	local body = HttpService:JSONEncode({
 		model = model,
-		prompt = prompt,
+		prompt = fullPrompt,
 		stream = false,
 		temperature = CONFIG.TEMPERATURE
 	})
@@ -57,9 +65,9 @@ end
 local toolbar = plugin:CreateToolbar("Ollama AI")
 local widget = plugin:CreateDockWidgetPluginGui(
 	"Ollama AI Code Generator",
-	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1200, 800, 1200, 800)
+	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1000, 700, 1000, 700)
 )
-widget.Title = "🤖 Ollama AI Code Generator"
+widget.Title = "🤖 Ollama AI"
 
 -- Toggle button
 local toggleButton = toolbar:CreateButton("Toggle", "Show/Hide Ollama AI", "rbxasset://textures/DragLockedCursor.png")
@@ -74,23 +82,23 @@ end)
 -- Create UI inside widget
 local main = Instance.new("Frame")
 main.Size = UDim2.new(1, 0, 1, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+main.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
 main.BorderSizePixel = 0
 main.Parent = widget
 
 -- Chat messages container (scrolling)
 local chatContainer = Instance.new("ScrollingFrame")
-chatContainer.Size = UDim2.new(1, 0, 1, -80)
+chatContainer.Size = UDim2.new(1, 0, 1, -140)
 chatContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 chatContainer.BorderSizePixel = 0
-chatContainer.ScrollBarThickness = 8
+chatContainer.ScrollBarThickness = 6
 chatContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
 chatContainer.CanvasSize = UDim2.new(1, 0, 0, 0)
 chatContainer.Parent = main
 
 -- Chat layout
 local chatLayout = Instance.new("UIListLayout")
-chatLayout.Padding = UDim.new(0, 8)
+chatLayout.Padding = UDim.new(0, 10)
 chatLayout.FillDirection = Enum.FillDirection.Vertical
 chatLayout.SortOrder = Enum.SortOrder.LayoutOrder
 chatLayout.Parent = chatContainer
@@ -115,9 +123,9 @@ local function addMessage(text, isUser, isCode)
 	
 	local msgLabel = Instance.new("TextLabel")
 	msgLabel.Size = UDim2.new(1, 0, 0, 0)
-	msgLabel.BackgroundColor3 = isUser and Color3.fromRGB(0, 120, 180) or (isCode and Color3.fromRGB(30, 40, 50) or Color3.fromRGB(40, 50, 60))
+	msgLabel.BackgroundColor3 = isUser and Color3.fromRGB(0, 100, 150) or (isCode and Color3.fromRGB(25, 32, 42) or Color3.fromRGB(35, 42, 55))
 	msgLabel.TextColor3 = isCode and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(220, 220, 220)
-	msgLabel.TextSize = isCode and 10 or 12
+	msgLabel.TextSize = isCode and 11 or 13
 	msgLabel.Font = isCode and Enum.Font.Code or Enum.Font.Gotham
 	msgLabel.Text = text
 	msgLabel.TextWrapped = true
@@ -126,46 +134,85 @@ local function addMessage(text, isUser, isCode)
 	msgLabel.Parent = msgFrame
 	
 	local msgCorner = Instance.new("UICorner")
-	msgCorner.CornerRadius = UDim.new(0, 8)
+	msgCorner.CornerRadius = UDim.new(0, 12)
 	msgCorner.Parent = msgLabel
 	
 	local msgPadding = Instance.new("UIPadding")
-	msgPadding.PaddingLeft = UDim.new(0, 10)
-	msgPadding.PaddingRight = UDim.new(0, 10)
-	msgPadding.PaddingTop = UDim.new(0, 8)
-	msgPadding.PaddingBottom = UDim.new(0, 8)
+	msgPadding.PaddingLeft = UDim.new(0, 12)
+	msgPadding.PaddingRight = UDim.new(0, 12)
+	msgPadding.PaddingTop = UDim.new(0, 10)
+	msgPadding.PaddingBottom = UDim.new(0, 10)
 	msgPadding.Parent = msgLabel
 	
 	-- Calculate text size
 	local textSize = msgLabel.TextBounds
-	msgLabel.Size = UDim2.new(1, 0, 0, math.max(textSize.Y + 16, 30))
+	msgLabel.Size = UDim2.new(1, 0, 0, math.max(textSize.Y + 20, 35))
 	msgFrame.Size = UDim2.new(1, -24, 0, msgLabel.Size.Y.Offset)
 	
 	-- Scroll to bottom
+	task.wait(0.05)
 	chatContainer.CanvasSize = UDim2.new(1, 0, 0, chatLayout.AbsoluteContentSize.Y + 24)
-	chatContainer:TweenPosition(UDim2.new(0, 0, 1, -chatContainer.AbsoluteSize.Y), Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, 0.2, true)
+	chatContainer.CanvasPosition = Vector2.new(0, math.max(0, chatLayout.AbsoluteContentSize.Y - chatContainer.AbsoluteSize.Y + 24))
 end
 
--- Input area
-local inputContainer = Instance.new("Frame")
-inputContainer.Size = UDim2.new(1, 0, 0, 70)
-inputContainer.Position = UDim2.new(0, 0, 1, -70)
-inputContainer.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
-inputContainer.BorderSizePixel = 0
-inputContainer.Parent = main
+-- Bottom control panel
+local controlPanel = Instance.new("Frame")
+controlPanel.Size = UDim2.new(1, 0, 0, 140)
+controlPanel.Position = UDim2.new(0, 0, 1, -140)
+controlPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+controlPanel.BorderSizePixel = 0
+controlPanel.Parent = main
 
-local inputPadding = Instance.new("UIPadding")
-inputPadding.PaddingLeft = UDim.new(0, 10)
-inputPadding.PaddingRight = UDim.new(0, 10)
-inputPadding.PaddingTop = UDim.new(0, 8)
-inputPadding.PaddingBottom = UDim.new(0, 8)
-inputPadding.Parent = inputContainer
+local panelPadding = Instance.new("UIPadding")
+panelPadding.PaddingLeft = UDim.new(0, 10)
+panelPadding.PaddingRight = UDim.new(0, 10)
+panelPadding.PaddingTop = UDim.new(0, 8)
+panelPadding.PaddingBottom = UDim.new(0, 8)
+panelPadding.Parent = controlPanel
+
+-- Script type selector
+local typeLabel = Instance.new("TextLabel")
+typeLabel.Size = UDim2.new(0, 80, 0, 20)
+typeLabel.BackgroundTransparency = 1
+typeLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+typeLabel.TextSize = 11
+typeLabel.Font = Enum.Font.Gotham
+typeLabel.Text = "Script Type:"
+typeLabel.TextXAlignment = Enum.TextXAlignment.Left
+typeLabel.Parent = controlPanel
+
+local typeSelector = Instance.new("TextButton")
+typeSelector.Size = UDim2.new(0, 120, 0, 24)
+typeSelector.Position = UDim2.new(0, 85, 0, 0)
+typeSelector.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
+typeSelector.BorderColor3 = Color3.fromRGB(80, 120, 180)
+typeSelector.BorderSizePixel = 1
+typeSelector.TextColor3 = Color3.fromRGB(200, 200, 200)
+typeSelector.TextSize = 11
+typeSelector.Font = Enum.Font.Gotham
+typeSelector.Text = "LocalScript ▼"
+typeSelector.Parent = controlPanel
+
+local typeCorner = Instance.new("UICorner")
+typeCorner.CornerRadius = UDim.new(0, 6)
+typeCorner.Parent = typeSelector
+
+local scriptTypes = {"LocalScript", "Script", "ModuleScript"}
+local typeIndex = 1
+
+typeSelector.MouseButton1Click:Connect(function()
+	typeIndex = typeIndex + 1
+	if typeIndex > #scriptTypes then typeIndex = 1 end
+	STATE.scriptType = scriptTypes[typeIndex]
+	typeSelector.Text = STATE.scriptType .. " ▼"
+end)
 
 -- Text input
 local textInput = Instance.new("TextBox")
 textInput.Size = UDim2.new(1, -60, 0, 50)
-textInput.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
-textInput.BorderColor3 = Color3.fromRGB(100, 150, 200)
+textInput.Position = UDim2.new(0, 0, 0, 32)
+textInput.BackgroundColor3 = Color3.fromRGB(28, 32, 42)
+textInput.BorderColor3 = Color3.fromRGB(80, 120, 180)
 textInput.BorderSizePixel = 1
 textInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 textInput.TextSize = 12
@@ -173,31 +220,63 @@ textInput.Font = Enum.Font.Gotham
 textInput.TextWrapped = true
 textInput.TextXAlignment = Enum.TextXAlignment.Left
 textInput.TextYAlignment = Enum.TextYAlignment.Top
-textInput.PlaceholderText = "Ask me to generate code... (Enter to send)"
-textInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-textInput.Parent = inputContainer
+textInput.PlaceholderText = "Chat with AI or ask for code... (Enter to send)"
+textInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+textInput.Parent = controlPanel
 
 local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.CornerRadius = UDim.new(0, 8)
 inputCorner.Parent = textInput
 
 -- Send button
 local sendBtn = Instance.new("TextButton")
 sendBtn.Size = UDim2.new(0, 50, 0, 50)
-sendBtn.Position = UDim2.new(1, -50, 0, 0)
-sendBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+sendBtn.Position = UDim2.new(1, -50, 0, 32)
+sendBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 100)
 sendBtn.BorderSizePixel = 0
 sendBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-sendBtn.TextSize = 20
+sendBtn.TextSize = 18
 sendBtn.Font = Enum.Font.GothamBold
 sendBtn.Text = "⬆️"
-sendBtn.Parent = inputContainer
+sendBtn.Parent = controlPanel
 
 local sendCorner = Instance.new("UICorner")
-sendCorner.CornerRadius = UDim.new(0, 6)
+sendCorner.CornerRadius = UDim.new(0, 8)
 sendCorner.Parent = sendBtn
 
--- Handle send
+-- Generate script button
+local genScriptBtn = Instance.new("TextButton")
+genScriptBtn.Size = UDim2.new(0, 100, 0, 30)
+genScriptBtn.Position = UDim2.new(1, -160, 0, 90)
+genScriptBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+genScriptBtn.BorderSizePixel = 0
+genScriptBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+genScriptBtn.TextSize = 12
+genScriptBtn.Font = Enum.Font.GothamBold
+genScriptBtn.Text = "💾 Gen Script"
+genScriptBtn.Parent = controlPanel
+
+local genCorner = Instance.new("UICorner")
+genCorner.CornerRadius = UDim.new(0, 6)
+genCorner.Parent = genScriptBtn
+
+-- Insert script button
+local insertBtn = Instance.new("TextButton")
+insertBtn.Size = UDim2.new(0, 100, 0, 30)
+insertBtn.Position = UDim2.new(1, -55, 0, 90)
+insertBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+insertBtn.BorderSizePixel = 0
+insertBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+insertBtn.TextSize = 12
+insertBtn.Font = Enum.Font.GothamBold
+insertBtn.Text = "➕ Insert"
+insertBtn.Parent = controlPanel
+
+local insertCorner = Instance.new("UICorner")
+insertCorner.CornerRadius = UDim.new(0, 6)
+insertCorner.Parent = insertBtn
+
+-- Handle send message
 local function sendMessage()
 	local prompt = textInput.Text:gsub("^%s+|%s+$", "")
 	if prompt == "" or STATE.isGenerating then return end
@@ -209,29 +288,68 @@ local function sendMessage()
 	-- Generate response
 	addMessage("⏳ Generating...", false, false)
 	
-	local success, code = callOllama(prompt, CONFIG.DEFAULT_MODEL)
+	local success, response = callOllama(prompt, CONFIG.DEFAULT_MODEL, false)
 	if success then
 		-- Remove loading message
-		chatContainer:FindFirstChildOfClass("Frame").Parent = nil
-		-- Add code response
-		addMessage(code, false, true)
-		log("Generated: " .. string.len(code) .. " chars")
-		
-		-- Create script in workspace
-		local script = Instance.new("LocalScript")
-		script.Name = "OllamaGenerated_" .. tostring(math.random(10000, 99999))
-		script.Source = code
-		script.Parent = workspace
-		addMessage("✓ Script created in workspace!", false, false)
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		-- Add response
+		addMessage(response, false, false)
+		log("Generated: " .. string.len(response) .. " chars")
 	else
 		-- Remove loading message
-		chatContainer:FindFirstChildOfClass("Frame").Parent = nil
-		addMessage("✗ Error: " .. code, false, false)
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		addMessage("✗ Error: " .. response, false, false)
 	end
 end
 
-sendBtn.MouseButton1Click:Connect(sendMessage)
+-- Handle generate script
+genScriptBtn.MouseButton1Click:Connect(function()
+	local prompt = textInput.Text
+	if prompt == "" or STATE.isGenerating then return end
+	
+	addMessage("📝 " .. prompt, true, false)
+	textInput.Text = ""
+	
+	addMessage("⏳ Generating " .. STATE.scriptType .. "...", false, false)
+	
+	local success, code = callOllama(prompt, CONFIG.DEFAULT_MODEL, true)
+	if success then
+		-- Remove loading message
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		
+		STATE.lastGenCode = code
+		addMessage(code, false, true)
+		addMessage("✓ Code ready! Click '➕ Insert' to add to workspace", false, false)
+		log("Generated code: " .. string.len(code) .. " chars")
+	else
+		-- Remove loading message
+		local frames = chatContainer:FindFirstChildOfClass("Frame")
+		if frames then frames.Parent = nil end
+		addMessage("✗ Error: " .. code, false, false)
+	end
+end)
 
+-- Handle insert script
+insertBtn.MouseButton1Click:Connect(function()
+	if STATE.lastGenCode == "" then
+		addMessage("✗ Generate a script first!", false, false)
+		return
+	end
+	
+	local script = Instance.new(STATE.scriptType)
+	script.Name = "OllamaGenerated_" .. tostring(math.random(10000, 99999))
+	script.Source = STATE.lastGenCode
+	script.Parent = workspace
+	
+	addMessage("✓ " .. STATE.scriptType .. " created in workspace!", false, false)
+	log("Script injected: " .. STATE.scriptType)
+end)
+
+-- Send on enter
+sendBtn.MouseButton1Click:Connect(sendMessage)
 textInput.InputEnded:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then return end
 	if input.KeyCode == Enum.KeyCode.Return then
@@ -244,5 +362,5 @@ plugin.Unloading:Connect(function()
 	widget:Destroy()
 end)
 
-log("✓ Ready! Chat interface loaded")
-log("✓ Click 'Toggle' to open, then ask for code!")
+log("✓ Ready! Roblox AI Chat loaded")
+log("✓ Toggle the window and start chatting!")
