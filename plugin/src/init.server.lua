@@ -940,8 +940,7 @@ thumbsDownBtn.MouseButton1Click:Connect(function()
 	AdvancedLearning.recordThumbsDown(lastGeneratedCode)
 	addMessage("👎 Disliked. I'll avoid this approach.", false, false)
 end)
-		return
-	end
+
 sendBtn.MouseButton1Click:Connect(handleMessage)
 textInput.InputEnded:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then return end
