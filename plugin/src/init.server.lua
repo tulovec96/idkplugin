@@ -350,6 +350,7 @@ end
 local STATE = {
 	isGenerating = false,
 	messageCount = 0,
+	activityCount = 0,
 	context = ContextScanner.scanProject(),
 	showingAlternatives = false,
 	selectedAlt = 0
@@ -370,7 +371,7 @@ local widget = plugin:CreateDockWidgetPluginGui(
 	"Lemonade AI",
 	DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Float, false, true, 1000, 700, 1000, 700)
 )
-widget.Title = "🍋 Lemonade AI - Clean"
+widget.Title = "🍋 Lemonade"
 
 local toggleButton = toolbar:CreateButton("Toggle", "Show/Hide", "rbxasset://textures/DragLockedCursor.png")
 toggleButton.Click:Connect(function()
@@ -388,7 +389,7 @@ main.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
 main.BorderSizePixel = 0
 main.Parent = widget
 
--- Create three-panel layout: chat | checkpoints | investigation
+-- Create two-panel layout: main (left) | checkpoints (right)
 local leftPanel = Instance.new("Frame")
 leftPanel.Size = UDim2.new(0.7, 0, 1, -120)
 leftPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
@@ -401,6 +402,63 @@ rightPanel.Position = UDim2.new(0.7, 1, 0, 0)
 rightPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
 rightPanel.BorderSizePixel = 0
 rightPanel.Parent = main
+
+-- Left header (Lemonade-style)
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+header.BorderSizePixel = 0
+header.Parent = leftPanel
+
+local headerTitle = Instance.new("TextLabel")
+headerTitle.Size = UDim2.new(0.6, 0, 1, 0)
+headerTitle.BackgroundTransparency = 1
+headerTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+headerTitle.TextSize = 14
+headerTitle.Font = Enum.Font.GothamBold
+headerTitle.Text = "🍋 Lemonade"
+headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+headerTitle.Position = UDim2.new(0, 12, 0, 0)
+headerTitle.Parent = header
+
+local headerStatus = Instance.new("TextLabel")
+headerStatus.Size = UDim2.new(0.4, -12, 0, 22)
+headerStatus.Position = UDim2.new(0.6, 0, 0.5, -11)
+headerStatus.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
+headerStatus.TextColor3 = Color3.fromRGB(140, 200, 160)
+headerStatus.TextSize = 10
+headerStatus.Font = Enum.Font.Gotham
+headerStatus.Text = "Planning completed successfully"
+headerStatus.TextWrapped = true
+headerStatus.BorderSizePixel = 0
+headerStatus.Parent = header
+
+local headerStatusCorner = Instance.new("UICorner")
+headerStatusCorner.CornerRadius = UDim.new(0, 6)
+headerStatusCorner.Parent = headerStatus
+
+-- Activity log (investigation panel)
+local activityContainer = Instance.new("ScrollingFrame")
+activityContainer.Size = UDim2.new(1, 0, 0, 180)
+activityContainer.Position = UDim2.new(0, 0, 0, 40)
+activityContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+activityContainer.BorderSizePixel = 0
+activityContainer.ScrollBarThickness = 4
+activityContainer.CanvasSize = UDim2.new(1, 0, 0, 0)
+activityContainer.Parent = leftPanel
+
+local activityLayout = Instance.new("UIListLayout")
+activityLayout.Padding = UDim.new(0, 6)
+activityLayout.FillDirection = Enum.FillDirection.Vertical
+activityLayout.SortOrder = Enum.SortOrder.LayoutOrder
+activityLayout.Parent = activityContainer
+
+local activityPadding = Instance.new("UIPadding")
+activityPadding.PaddingLeft = UDim.new(0, 10)
+activityPadding.PaddingRight = UDim.new(0, 10)
+activityPadding.PaddingTop = UDim.new(0, 10)
+activityPadding.PaddingBottom = UDim.new(0, 10)
+activityPadding.Parent = activityContainer
 
 -- Right panel label (Checkpoints)
 local checkpointLabel = Instance.new("TextLabel")
@@ -438,7 +496,8 @@ checkpointPadding.Parent = checkpointList
 
 -- Chat area (left panel)
 local chatContainer = Instance.new("ScrollingFrame")
-chatContainer.Size = UDim2.new(1, 0, 1, 0)
+chatContainer.Size = UDim2.new(1, 0, 1, -220)
+chatContainer.Position = UDim2.new(0, 0, 0, 220)
 chatContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 chatContainer.BorderSizePixel = 0
 chatContainer.ScrollBarThickness = 6
@@ -498,6 +557,50 @@ local function addMessage(text, isUser, isCode)
 	task.wait(0.05)
 	chatContainer.CanvasSize = UDim2.new(1, 0, 0, chatLayout.AbsoluteContentSize.Y + 20)
 	chatContainer.CanvasPosition = Vector2.new(0, math.max(0, chatLayout.AbsoluteContentSize.Y - chatContainer.AbsoluteSize.Y + 20))
+end
+
+-- Add activity log entry (Lemonade-style)
+local function addActivity(text, level)
+	STATE.activityCount = STATE.activityCount + 1
+
+	local entry = Instance.new("Frame")
+	entry.Size = UDim2.new(1, 0, 0, 28)
+	entry.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+	entry.BorderSizePixel = 0
+	entry.LayoutOrder = STATE.activityCount
+	entry.Parent = activityContainer
+
+	local entryCorner = Instance.new("UICorner")
+	entryCorner.CornerRadius = UDim.new(0, 6)
+	entryCorner.Parent = entry
+
+	local icon = "🔍"
+	local color = Color3.fromRGB(140, 180, 220)
+	if level == "success" then
+		icon = "✓"
+		color = Color3.fromRGB(140, 220, 160)
+	elseif level == "warn" then
+		icon = "⚠️"
+		color = Color3.fromRGB(220, 190, 120)
+	elseif level == "error" then
+		icon = "✕"
+		color = Color3.fromRGB(220, 120, 120)
+	end
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -10, 1, 0)
+	label.Position = UDim2.new(0, 8, 0, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = color
+	label.TextSize = 10
+	label.Font = Enum.Font.Gotham
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Text = icon .. " " .. text
+	label.Parent = entry
+
+	task.wait(0.05)
+	activityContainer.CanvasSize = UDim2.new(1, 0, 0, activityLayout.AbsoluteContentSize.Y + 12)
+	activityContainer.CanvasPosition = Vector2.new(0, math.max(0, activityLayout.AbsoluteContentSize.Y - activityContainer.AbsoluteSize.Y + 12))
 end
 
 -- Update checkpoint list UI
@@ -601,7 +704,7 @@ end
 
 -- Add investigation log entry
 local function logInvestigation(text)
-	addMessage("🔍 " .. text, false, false)
+	addActivity(text, "info")
 end
 
 -- Input area
@@ -836,11 +939,13 @@ local function handleMessage()
 			updateCheckpointList()
 			
 			addMessage(code, false, true)
-			logInvestigation("✓ Code generated successfully")
+			logInvestigation("Code generated successfully")
+			addActivity("Task completed successfully", "success")
 			
 			Memory.save(text, code)
 		else
 			addMessage("❌ Error: " .. code, false, false)
+			addActivity("Generation failed", "error")
 		end
 	else
 		-- Regular chat
@@ -864,8 +969,10 @@ local function handleMessage()
 		if success then
 			local decoded = HttpService:JSONDecode(response)
 			addMessage(decoded.response or "", false, false)
+			addActivity("Response complete", "success")
 		else
 			addMessage("❌ Error", false, false)
+			addActivity("Request failed", "error")
 		end
 	end
 	
@@ -882,31 +989,16 @@ injectBtn.MouseButton1Click:Connect(function()
 		addMessage("❌ Generate code first!", false, false)
 		return
 	end
-	
-	-- Create a LocalScript in StarterPlayer to inject code
-	local injectionCode = "load(" .. string.format("%q", "local code = " .. string.format("%q", lastGeneratedCode) .. "; load(code)()") .. ")()"
-	
-	-- Try multiple injection points
-	local starterPlayer = game:GetService("StarterPlayer")
-	
-	-- Try StarterPlayerScripts first
-	local starterScripts = starterPlayer:FindFirstChild("StarterPlayerScripts")
-	if not starterScripts then
-		starterScripts = Instance.new("LocalScript")
-		starterScripts.Name = "StarterPlayerScripts"
-		starterScripts.Parent = starterPlayer
-	end
-	
-	local injectedScript = Instance.new("LocalScript")
-	injectedScript.Name = "Injected_" .. tostring(math.random(10000, 99999))
-	injectedScript.Source = injectionCode
-	injectedScript.Parent = starterScripts
-	
-	addMessage("💉 Code injected into StarterPlayerScripts", false, false)
-	addMessage("⚠️ Requires game restart to execute", false, false)
+
+	local scriptType = lastScriptType ~= "" and lastScriptType or PatternMatcher.detectScriptType(lastGeneratedCode)
+	local targetLocation = lastLocation or PatternMatcher.getSuggestedLocation(scriptType)
+
+	local injectedScript = StudioIntegration.insertCode(lastGeneratedCode, scriptType, targetLocation)
+	addMessage("💉 Injected into " .. targetLocation.Name .. " as " .. scriptType, false, false)
+	addMessage("⚠️ Run the game to execute injected scripts", false, false)
 	
 	-- Also log the action
-	Memory.save("Injected: " .. lastScriptType, lastGeneratedCode)
+	Memory.save("Injected: " .. scriptType, lastGeneratedCode)
 end)
 
 -- Copy to clipboard
@@ -955,3 +1047,4 @@ end)
 
 log("✓ Phase 3.2 loaded: Clean UI + Script injection!")
 addMessage("🍋 Lemonade AI (Clean)\n💉 Inject code into running game\n📋 Copy to clipboard\n🔄 Checkpoint system\n🎯 Investigation logs", false, false)
+addActivity("Planning completed successfully", "success")
