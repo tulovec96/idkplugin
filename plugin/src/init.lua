@@ -4,7 +4,7 @@
 	Connects to: http://23.88.19.42:11434/
 ]]
 
-local plugin = plugin
+require(script.Main)
 local HttpService = game:GetService("HttpService")
 
 local CONFIG = {

@@ -5,6 +5,13 @@
 		"$properties": {
 			"Name": "Ollama AI Code Generator"
 		},
-		"$path": "src/init.server.lua"
+		"init": {
+			"$className": "LocalScript",
+			"$path": "src/init.lua"
+		},
+		"Main": {
+			"$className": "ModuleScript",
+			"$path": "src/Main.lua"
+		}
 	}
 }
