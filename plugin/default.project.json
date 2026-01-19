@@ -5,6 +5,6 @@
 		"$properties": {
 			"Name": "Ollama AI Code Generator"
 		},
-		"$path": "src/init.lua"
+		"$path": "src"
 	}
 }
