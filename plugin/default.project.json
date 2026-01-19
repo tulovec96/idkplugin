@@ -1,16 +1,12 @@
 {
 	"name": "Ollama AI Code Generator",
 	"tree": {
-		"$className": "Plugin",
-		"$properties": {
-			"Name": "Ollama AI Code Generator"
+		"$className": "Folder",
+		"Plugin": {
+			"$path": "src"
 		},
-		"init": {
-			"$className": "LocalScript",
-			"$path": "src/init.lua"
-		},
-		"Main": {
-			"$path": "src/Main.lua"
+		"Version": {
+			"$path": "Version.txt"
 		}
 	}
 }
