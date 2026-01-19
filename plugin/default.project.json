@@ -3,10 +3,10 @@
     "tree": {
         "$className": "Folder",
         "OllamaPlugin": {
-            "$path": "plugin/src"
+            "$path": "src"
         },
         "Version": {
-            "$path": "plugin/Version.txt"
+            "$path": "Version.txt"
         }
     }
 }
