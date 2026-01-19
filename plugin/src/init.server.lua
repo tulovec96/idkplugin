@@ -303,7 +303,7 @@ local function createGui()
 	planOutput.BorderSizePixel = 1
 	planOutput.TextColor3 = Color3.fromRGB(150, 200, 150)
 	planOutput.TextSize = 11
-	planOutput.Font = Enum.Font.GothamMonospace
+	planOutput.Font = Enum.Font.Code
 	planOutput.TextWrapped = true
 	planOutput.TextXAlignment = Enum.TextXAlignment.Left
 	planOutput.TextYAlignment = Enum.TextYAlignment.Top
@@ -331,7 +331,7 @@ local function createGui()
 	codeOutput.BorderSizePixel = 1
 	codeOutput.TextColor3 = Color3.fromRGB(0, 255, 0)
 	codeOutput.TextSize = 10
-	codeOutput.Font = Enum.Font.GothamMonospace
+	codeOutput.Font = Enum.Font.Code
 	codeOutput.TextWrapped = true
 	codeOutput.TextXAlignment = Enum.TextXAlignment.Left
 	codeOutput.TextYAlignment = Enum.TextYAlignment.Top
@@ -386,7 +386,7 @@ end
 
 -- Toolbar button
 local toolbar = plugin:CreateToolbar("Ollama AI")
-local mainButton = toolbar:CreateButton("Ollama AI", "AI Code Generator with Planning", "rbxasset://textures/Cursor.png")
+local mainButton = toolbar:CreateButton("Ollama AI", "AI Code Generator with Planning", "rbxasset://textures/DragLockedCursor.png")
 
 mainButton.Click:Connect(function()
 	if STATE.isOpen and STATE.currentGui then
