@@ -239,6 +239,12 @@ function AdvancedLearning.getNextSuggestion()
 	return nil
 end
 
+-- ============================================================================
+-- PHASE 2: PATTERN MATCHING ENGINE
+-- ============================================================================
+
+local PatternMatcher = {}
+
 function PatternMatcher.detectScriptType(userRequest)
 	local lower = string.lower(userRequest)
 	if string.find(lower, "client") or string.find(lower, "player") or string.find(lower, "gui") then
