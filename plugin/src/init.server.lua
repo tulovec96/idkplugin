@@ -72,17 +72,11 @@ widget:GetPropertyChangedSignal("Enabled"):Connect(function()
 end)
 
 -- Create UI inside widget
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "OllamaAIGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = widget
-
--- Main content frame
 local main = Instance.new("Frame")
 main.Size = UDim2.new(1, 0, 1, 0)
 main.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 main.BorderSizePixel = 0
-main.Parent = screenGui
+main.Parent = widget
 
 -- Chat messages container (scrolling)
 local chatContainer = Instance.new("ScrollingFrame")
