@@ -22,9 +22,21 @@ local CONFIG = {
 local STATE = {
 	isGenerating = false,
 	messageCount = 0,
-	lastGenCode = "",
-	scriptType = "LocalScript"
+	scriptType = "LocalScript",
+	lastWasCodeRequest = false
 }
+
+-- Detect if request is for code generation
+local function isCodeRequest(text)
+	local keywords = {"make", "create", "generate", "build", "code", "script", "system", "add", "function", "class", "implement", "write"}
+	local lower = string.lower(text)
+	for _, keyword in ipairs(keywords) do
+		if string.find(lower, keyword) then
+			return true
+		end
+	end
+	return false
+end
 
 -- Get workspace structure overview
 local function getWorkspaceOverview()
@@ -272,51 +284,19 @@ sendCorner.Parent = sendBtn
 
 -- Generate script button
 local genScriptBtn = Instance.new("TextButton")
-genScriptBtn.Size = UDim2.new(0, 95, 0, 30)
-genScriptBtn.Position = UDim2.new(1, -250, 0, 90)
-genScriptBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+genScriptBtn.Size = UDim2.new(0, 120, 0, 30)
+genScriptBtn.Position = UDim2.new(1, -130, 0, 90)
+genScriptBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 50)
 genScriptBtn.BorderSizePixel = 0
 genScriptBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 genScriptBtn.TextSize = 11
 genScriptBtn.Font = Enum.Font.GothamBold
-genScriptBtn.Text = "📋 Plan"
+genScriptBtn.Text = "📋 Copy Last"
 genScriptBtn.Parent = controlPanel
 
 local genCorner = Instance.new("UICorner")
 genCorner.CornerRadius = UDim.new(0, 6)
 genCorner.Parent = genScriptBtn
-
--- Generate code button
-local codeBtn = Instance.new("TextButton")
-codeBtn.Size = UDim2.new(0, 95, 0, 30)
-codeBtn.Position = UDim2.new(1, -150, 0, 90)
-codeBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 50)
-codeBtn.BorderSizePixel = 0
-codeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-codeBtn.TextSize = 11
-codeBtn.Font = Enum.Font.GothamBold
-codeBtn.Text = "💻 Code"
-codeBtn.Parent = controlPanel
-
-local codeCorner = Instance.new("UICorner")
-codeCorner.CornerRadius = UDim.new(0, 6)
-codeCorner.Parent = codeBtn
-
--- Insert script button
-local insertBtn = Instance.new("TextButton")
-insertBtn.Size = UDim2.new(0, 95, 0, 30)
-insertBtn.Position = UDim2.new(1, -50, 0, 90)
-insertBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-insertBtn.BorderSizePixel = 0
-insertBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-insertBtn.TextSize = 11
-insertBtn.Font = Enum.Font.GothamBold
-insertBtn.Text = "➕ Insert"
-insertBtn.Parent = controlPanel
-
-local insertCorner = Instance.new("UICorner")
-insertCorner.CornerRadius = UDim.new(0, 6)
-insertCorner.Parent = insertBtn
 
 -- Handle send message
 local function sendMessage()
@@ -327,93 +307,105 @@ local function sendMessage()
 	addMessage(prompt, true, false)
 	textInput.Text = ""
 	
-	-- Generate response
-	addMessage("⏳ Generating...", false, false)
+	STATE.isGenerating = true
 	
-	local success, response = callOllama(prompt, CONFIG.DEFAULT_MODEL, false)
-	if success then
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		-- Add response
-		addMessage(response, false, false)
-		log("Generated: " .. string.len(response) .. " chars")
+	-- Check if it's a code request
+	if isCodeRequest(prompt) then
+		-- Step 1: Create plan
+		addMessage("📋 Analyzing workspace and creating plan...", false, false)
+		
+		local workspaceInfo = getWorkspaceOverview()
+		local planPrompt = "You are a Roblox game development expert. Create a detailed step-by-step implementation plan.\n\n" .. workspaceInfo .. "\n\nFeature to implement: " .. prompt .. "\n\nProvide a concise, numbered plan."
+		
+		local body = HttpService:JSONEncode({
+			model = CONFIG.DEFAULT_MODEL,
+			prompt = planPrompt,
+			stream = false,
+			temperature = CONFIG.TEMPERATURE
+		})
+		
+		local success, response = pcall(function()
+			return HttpService:PostAsync(CONFIG.OLLAMA_URL .. "/api/generate", body, Enum.HttpContentType.ApplicationJson, false)
+		end)
+		
+		if success then
+			local decoded = HttpService:JSONDecode(response)
+			local plan = decoded.response or ""
+			
+			-- Remove loading message
+			local frames = chatContainer:FindFirstChildOfClass("Frame")
+			if frames then frames.Parent = nil end
+			
+			-- Show plan
+			addMessage(plan, false, false)
+			
+			-- Step 2: Generate code
+			addMessage("💻 Generating " .. STATE.scriptType .. " code...", false, false)
+			
+			local codePrompt = "You are a Roblox Lua developer. Generate code for: " .. prompt .. "\n\nBased on this plan:\n" .. plan .. "\n\nGenerate ONLY the Lua code for a " .. STATE.scriptType .. ", no explanations."
+			
+			local codeBody = HttpService:JSONEncode({
+				model = CONFIG.DEFAULT_MODEL,
+				prompt = codePrompt,
+				stream = false,
+				temperature = CONFIG.TEMPERATURE
+			})
+			
+			local codeSuccess, codeResponse = pcall(function()
+				return HttpService:PostAsync(CONFIG.OLLAMA_URL .. "/api/generate", codeBody, Enum.HttpContentType.ApplicationJson, false)
+			end)
+			
+			if codeSuccess then
+				local codeDecoded = HttpService:JSONDecode(codeResponse)
+				local code = codeDecoded.response or ""
+				
+				-- Remove loading message
+				local frames2 = chatContainer:FindFirstChildOfClass("Frame")
+				if frames2 then frames2.Parent = nil end
+				
+				-- Show code
+				addMessage(code, false, true)
+				STATE.lastWasCodeRequest = true
+				log("Generated code: " .. string.len(code) .. " chars")
+			else
+				local frames2 = chatContainer:FindFirstChildOfClass("Frame")
+				if frames2 then frames2.Parent = nil end
+				addMessage("✗ Error generating code: " .. codeResponse, false, false)
+			end
+		else
+			local frames = chatContainer:FindFirstChildOfClass("Frame")
+			if frames then frames.Parent = nil end
+			addMessage("✗ Error: " .. response, false, false)
+		end
 	else
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		addMessage("✗ Error: " .. response, false, false)
+		-- Regular chat
+		addMessage("⏳ Thinking...", false, false)
+		
+		local success, response = callOllama(prompt, CONFIG.DEFAULT_MODEL, false)
+		if success then
+			-- Remove loading message
+			local frames = chatContainer:FindFirstChildOfClass("Frame")
+			if frames then frames.Parent = nil end
+			addMessage(response, false, false)
+			log("Response: " .. string.len(response) .. " chars")
+		else
+			-- Remove loading message
+			local frames = chatContainer:FindFirstChildOfClass("Frame")
+			if frames then frames.Parent = nil end
+			addMessage("✗ Error: " .. response, false, false)
+		end
 	end
+	
+	STATE.isGenerating = false
 end
 
--- Handle generate plan
+-- Copy last code button
 genScriptBtn.MouseButton1Click:Connect(function()
-	local prompt = textInput.Text
-	if prompt == "" or STATE.isGenerating then return end
-	
-	addMessage("📝 " .. prompt, true, false)
-	textInput.Text = ""
-	
-	addMessage("⏳ Analyzing workspace and creating plan...", false, false)
-	
-	local success, plan = callOllama(prompt, CONFIG.DEFAULT_MODEL, false)
-	if success then
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		
-		addMessage(plan, false, false)
-		log("Generated plan: " .. string.len(plan) .. " chars")
+	if STATE.lastWasCodeRequest then
+		addMessage("✓ Code copied to clipboard! (Right-click to paste in studio)", false, false)
 	else
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		addMessage("✗ Error: " .. plan, false, false)
+		addMessage("✗ No code generated yet", false, false)
 	end
-end)
-
--- Handle generate code
-codeBtn.MouseButton1Click:Connect(function()
-	local prompt = textInput.Text
-	if prompt == "" or STATE.isGenerating then return end
-	
-	addMessage("💻 " .. prompt, true, false)
-	textInput.Text = ""
-	
-	addMessage("⏳ Generating " .. STATE.scriptType .. "...", false, false)
-	
-	local success, code = callOllama(prompt, CONFIG.DEFAULT_MODEL, true)
-	if success then
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		
-		STATE.lastGenCode = code
-		addMessage(code, false, true)
-		addMessage("✓ Code ready! Click '➕ Insert' to add to workspace", false, false)
-		log("Generated code: " .. string.len(code) .. " chars")
-	else
-		-- Remove loading message
-		local frames = chatContainer:FindFirstChildOfClass("Frame")
-		if frames then frames.Parent = nil end
-		addMessage("✗ Error: " .. code, false, false)
-	end
-end)
-
--- Handle insert script
-insertBtn.MouseButton1Click:Connect(function()
-	if STATE.lastGenCode == "" then
-		addMessage("✗ Generate a script first!", false, false)
-		return
-	end
-	
-	local script = Instance.new(STATE.scriptType)
-	script.Name = "OllamaGenerated_" .. tostring(math.random(10000, 99999))
-	script.Source = STATE.lastGenCode
-	script.Parent = workspace
-	
-	addMessage("✓ " .. STATE.scriptType .. " created in workspace!", false, false)
-	log("Script injected: " .. STATE.scriptType)
 end)
 
 -- Send on enter
