@@ -389,58 +389,40 @@ main.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
 main.BorderSizePixel = 0
 main.Parent = widget
 
--- Create two-panel layout: main (left) | checkpoints (right)
+-- Create two-panel layout: activity (left) | chat (right)
 local leftPanel = Instance.new("Frame")
-leftPanel.Size = UDim2.new(0.7, 0, 1, -120)
-leftPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+leftPanel.Size = UDim2.new(0.28, 0, 1, -120)
+leftPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
 leftPanel.BorderSizePixel = 0
 leftPanel.Parent = main
 
 local rightPanel = Instance.new("Frame")
-rightPanel.Size = UDim2.new(0.3, -1, 1, -120)
-rightPanel.Position = UDim2.new(0.7, 1, 0, 0)
-rightPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+rightPanel.Size = UDim2.new(0.72, -1, 1, -120)
+rightPanel.Position = UDim2.new(0.28, 1, 0, 0)
+rightPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 rightPanel.BorderSizePixel = 0
 rightPanel.Parent = main
 
--- Left header (Lemonade-style)
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 40)
-header.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-header.BorderSizePixel = 0
-header.Parent = leftPanel
+-- Activity header
+local activityHeader = Instance.new("TextLabel")
+activityHeader.Size = UDim2.new(1, 0, 0, 36)
+activityHeader.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+activityHeader.TextColor3 = Color3.fromRGB(200, 200, 200)
+activityHeader.TextSize = 12
+activityHeader.Font = Enum.Font.GothamBold
+activityHeader.Text = "🍋 Lemonade"
+activityHeader.TextXAlignment = Enum.TextXAlignment.Left
+activityHeader.BorderSizePixel = 0
+activityHeader.Parent = leftPanel
 
-local headerTitle = Instance.new("TextLabel")
-headerTitle.Size = UDim2.new(0.6, 0, 1, 0)
-headerTitle.BackgroundTransparency = 1
-headerTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
-headerTitle.TextSize = 14
-headerTitle.Font = Enum.Font.GothamBold
-headerTitle.Text = "🍋 Lemonade"
-headerTitle.TextXAlignment = Enum.TextXAlignment.Left
-headerTitle.Position = UDim2.new(0, 12, 0, 0)
-headerTitle.Parent = header
-
-local headerStatus = Instance.new("TextLabel")
-headerStatus.Size = UDim2.new(0.4, -12, 0, 22)
-headerStatus.Position = UDim2.new(0.6, 0, 0.5, -11)
-headerStatus.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
-headerStatus.TextColor3 = Color3.fromRGB(140, 200, 160)
-headerStatus.TextSize = 10
-headerStatus.Font = Enum.Font.Gotham
-headerStatus.Text = "Planning completed successfully"
-headerStatus.TextWrapped = true
-headerStatus.BorderSizePixel = 0
-headerStatus.Parent = header
-
-local headerStatusCorner = Instance.new("UICorner")
-headerStatusCorner.CornerRadius = UDim.new(0, 6)
-headerStatusCorner.Parent = headerStatus
+local activityHeaderPadding = Instance.new("UIPadding")
+activityHeaderPadding.PaddingLeft = UDim.new(0, 10)
+activityHeaderPadding.Parent = activityHeader
 
 -- Activity log (investigation panel)
 local activityContainer = Instance.new("ScrollingFrame")
-activityContainer.Size = UDim2.new(1, 0, 0, 180)
-activityContainer.Position = UDim2.new(0, 0, 0, 40)
+activityContainer.Size = UDim2.new(1, 0, 1, -36)
+activityContainer.Position = UDim2.new(0, 0, 0, 36)
 activityContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
 activityContainer.BorderSizePixel = 0
 activityContainer.ScrollBarThickness = 4
@@ -460,25 +442,43 @@ activityPadding.PaddingTop = UDim.new(0, 10)
 activityPadding.PaddingBottom = UDim.new(0, 10)
 activityPadding.Parent = activityContainer
 
--- Right panel label (Checkpoints)
-local checkpointLabel = Instance.new("TextLabel")
-checkpointLabel.Size = UDim2.new(1, 0, 0, 30)
-checkpointLabel.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
-checkpointLabel.TextColor3 = Color3.fromRGB(100, 150, 200)
-checkpointLabel.TextSize = 11
-checkpointLabel.Font = Enum.Font.GothamBold
-checkpointLabel.Text = "🔄 Checkpoints"
-checkpointLabel.BorderSizePixel = 0
-checkpointLabel.Parent = rightPanel
+-- Chat header (right panel)
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+header.BorderSizePixel = 0
+header.Parent = rightPanel
 
--- Checkpoint list
+local headerTitle = Instance.new("TextLabel")
+headerTitle.Size = UDim2.new(0.7, 0, 1, 0)
+headerTitle.BackgroundTransparency = 1
+headerTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+headerTitle.TextSize = 14
+headerTitle.Font = Enum.Font.GothamBold
+headerTitle.Text = "Lemonade"
+headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+headerTitle.Position = UDim2.new(0, 12, 0, 0)
+headerTitle.Parent = header
+
+local restoreCheckpointBtn = Instance.new("TextButton")
+restoreCheckpointBtn.Size = UDim2.new(0, 150, 0, 24)
+restoreCheckpointBtn.Position = UDim2.new(1, -160, 0.5, -12)
+restoreCheckpointBtn.BackgroundColor3 = Color3.fromRGB(24, 28, 38)
+restoreCheckpointBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+restoreCheckpointBtn.TextSize = 10
+restoreCheckpointBtn.Font = Enum.Font.Gotham
+restoreCheckpointBtn.Text = "Restore Checkpoint"
+restoreCheckpointBtn.BorderSizePixel = 0
+restoreCheckpointBtn.Parent = header
+
+local restoreCheckpointCorner = Instance.new("UICorner")
+restoreCheckpointCorner.CornerRadius = UDim.new(0, 6)
+restoreCheckpointCorner.Parent = restoreCheckpointBtn
+
+-- Hidden checkpoint list (kept for backend)
 local checkpointList = Instance.new("ScrollingFrame")
-checkpointList.Size = UDim2.new(1, 0, 1, -30)
-checkpointList.Position = UDim2.new(0, 0, 0, 30)
-checkpointList.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-checkpointList.BorderSizePixel = 0
-checkpointList.ScrollBarThickness = 4
-checkpointList.CanvasSize = UDim2.new(1, 0, 0, 0)
+checkpointList.Size = UDim2.new(0, 0, 0, 0)
+checkpointList.Visible = false
 checkpointList.Parent = rightPanel
 
 local checkpointLayout = Instance.new("UIListLayout")
@@ -494,15 +494,15 @@ checkpointPadding.PaddingTop = UDim.new(0, 6)
 checkpointPadding.PaddingBottom = UDim.new(0, 6)
 checkpointPadding.Parent = checkpointList
 
--- Chat area (left panel)
+-- Chat area (right panel)
 local chatContainer = Instance.new("ScrollingFrame")
-chatContainer.Size = UDim2.new(1, 0, 1, -220)
-chatContainer.Position = UDim2.new(0, 0, 0, 220)
+chatContainer.Size = UDim2.new(1, 0, 1, -40)
+chatContainer.Position = UDim2.new(0, 0, 0, 40)
 chatContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 chatContainer.BorderSizePixel = 0
 chatContainer.ScrollBarThickness = 6
 chatContainer.CanvasSize = UDim2.new(1, 0, 0, 0)
-chatContainer.Parent = leftPanel
+chatContainer.Parent = rightPanel
 
 local chatLayout = Instance.new("UIListLayout")
 chatLayout.Padding = UDim.new(0, 8)
@@ -706,6 +706,21 @@ end
 local function logInvestigation(text)
 	addActivity(text, "info")
 end
+
+restoreCheckpointBtn.MouseButton1Click:Connect(function()
+	local list = Checkpoint.getAll()
+	local last = list[#list]
+	if last then
+		local restored = Checkpoint.restore(last.id)
+		if restored then
+			addMessage("🔄 Restored checkpoint: " .. restored.scriptType, false, false)
+			addMessage(restored.code, false, true)
+			addActivity("Restored checkpoint", "success")
+		end
+	else
+		addActivity("No checkpoints to restore", "warn")
+	end
+end)
 
 -- Input area
 local inputArea = Instance.new("Frame")
